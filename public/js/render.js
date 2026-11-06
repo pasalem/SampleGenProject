@@ -8,7 +8,7 @@ export const esc = (s) =>
 export function symbols(text) {
   return esc(text).replace(/\{([^}]+)\}/g, (_, s) => {
     const file = encodeURIComponent(s.replace(/\//g, '').toUpperCase());
-    return `<img class="ms" src="${SYMBOL_URL}${file}.svg" alt="{${esc(s)}}" title="{${esc(s)}}">`;
+    return `<img class="ms" crossorigin="anonymous" src="${SYMBOL_URL}${file}.svg" alt="{${esc(s)}}" title="{${esc(s)}}">`;
   });
 }
 
@@ -23,6 +23,14 @@ export function faces(card) {
 
 export function imageOf(card, face = 0, size = 'normal') {
   return card.card_faces?.[face]?.image_uris?.[size] || card.image_uris?.[size] || card.card_faces?.[0]?.image_uris?.[size] || '';
+}
+
+// Scryfall's small (146px) and normal (488px) images, so the browser can pick the
+// smallest one that is still sharp at the current card size.
+export function srcsetOf(card, face = 0) {
+  const small = imageOf(card, face, 'small');
+  const normal = imageOf(card, face, 'normal');
+  return [small && `${small} 146w`, normal && `${normal} 488w`].filter(Boolean).join(', ');
 }
 
 export const hasBackImage = (card) => Boolean(card.card_faces?.[1]?.image_uris);
@@ -64,13 +72,13 @@ function faceHTML(f, withFlavor) {
     </div>`;
 }
 
-export function rowHTML(item) {
+export function rowHTML(item, sizes = '220px', face = 0) {
   const c = item.card;
   const price = priceOf(item);
   return `
   <article class="card-row" data-key="${esc(item.key)}" tabindex="0">
     <div class="art">
-      <img src="${esc(imageOf(c))}" alt="${esc(c.name)}" loading="lazy" decoding="async">
+      <img src="${esc(imageOf(c, face))}" srcset="${esc(srcsetOf(c, face))}" sizes="${esc(sizes)}" alt="${esc(c.name)}" loading="lazy" decoding="async" crossorigin="anonymous">
       ${item.qty > 1 ? `<span class="qty-badge">×${item.qty}</span>` : ''}
       ${item.finish !== 'nonfoil' ? '<span class="foil-badge">✦</span>' : ''}
       ${hasBackImage(c) ? '<button class="flip" title="Flip card" aria-label="Flip card">⟲</button>' : ''}
@@ -91,7 +99,33 @@ export function rowHTML(item) {
   </article>`;
 }
 
-const FORMATS = ['standard', 'pioneer', 'modern', 'legacy', 'vintage', 'commander', 'pauper', 'historic', 'brawl', 'oathbreaker'];
+export const CONDITIONS = ['Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'];
+export const LANGUAGES = ['English', 'Japanese', 'German', 'French', 'Italian', 'Spanish', 'Portuguese', 'Russian', 'Korean',
+  'Chinese Simplified', 'Chinese Traditional', 'Phyrexian'];
+
+const option = (value, label, current) =>
+  `<option value="${esc(value)}"${value === current ? ' selected' : ''}>${esc(label)}</option>`;
+
+// Editable finish / condition / language. Keeps any imported value that isn't in the preset lists.
+function editFieldsHTML(item) {
+  const finishes = [...new Set([...(item.card.finishes || ['nonfoil']), item.finish])];
+  const conditions = [...new Set([...CONDITIONS, item.condition].filter(Boolean))];
+  const languages = [...new Set([...LANGUAGES, item.language].filter(Boolean))];
+  return `
+      <div class="edit-fields">
+        <label>Finish
+          <select data-field="finish">${finishes.map((f) => option(f, FINISH_LABEL[f] || 'Non-foil', item.finish)).join('')}</select>
+        </label>
+        <label>Condition
+          <select data-field="condition">${option('', 'Not set', item.condition || '')}${conditions.map((v) => option(v, v, item.condition)).join('')}</select>
+        </label>
+        <label>Language
+          <select data-field="language">${option('', 'Not set', item.language || '')}${languages.map((v) => option(v, v, item.language)).join('')}</select>
+        </label>
+      </div>`;
+}
+
+export const FORMATS = ['standard', 'pioneer', 'modern', 'legacy', 'vintage', 'commander', 'pauper', 'historic', 'brawl', 'oathbreaker'];
 
 export function detailHTML(item) {
   const c = item.card;
@@ -104,7 +138,7 @@ export function detailHTML(item) {
   return `
   <div class="detail">
     <div class="detail-art">
-      <img src="${esc(imageOf(c, 0, 'large'))}" alt="${esc(c.name)}" data-key="${esc(item.key)}">
+      <img src="${esc(imageOf(c, 0, 'large'))}" crossorigin="anonymous" alt="${esc(c.name)}" data-key="${esc(item.key)}">
       ${hasBackImage(c) ? '<button class="flip big" data-act="flip">⟲ Flip</button>' : ''}
     </div>
     <div class="detail-info">
@@ -117,9 +151,6 @@ export function detailHTML(item) {
         <tr><th>Mana value</th><td>${esc(c.cmc)}</td></tr>
         ${c.color_identity ? `<tr><th>Color identity</th><td>${c.color_identity.length ? symbols(c.color_identity.map((x) => `{${x}}`).join('')) : 'Colorless'}</td></tr>` : ''}
         ${c.edhrec_rank ? `<tr><th>EDHREC rank</th><td>#${esc(c.edhrec_rank)}</td></tr>` : ''}
-        <tr><th>Finish</th><td>${esc(FINISH_LABEL[item.finish] || 'Non-foil')}</td></tr>
-        ${item.condition ? `<tr><th>Condition</th><td>${esc(item.condition)}</td></tr>` : ''}
-        ${item.language ? `<tr><th>Language</th><td>${esc(item.language)}</td></tr>` : ''}
         <tr><th>Value</th><td>${each ? `${money(each)} each · <b>${money(each * item.qty)}</b> total` : 'No price data'}</td></tr>
       </table>
       <div class="qty-controls">
@@ -129,6 +160,7 @@ export function detailHTML(item) {
         <button data-act="inc" aria-label="Increase">+</button>
         <button data-act="remove" class="danger">Remove</button>
       </div>
+      ${editFieldsHTML(item)}
       ${priceRows.length ? `<h4>Prices</h4><div class="chips">${priceRows.map(([k, v]) => `<span class="chip">${k}: ${esc(v)}</span>`).join('')}</div>` : ''}
       <h4>Legality</h4>
       <div class="legal">

@@ -234,7 +234,7 @@ dialog.drop-target { outline: 3px dashed var(--accent); outline-offset: 4px; }
 .help summary { cursor: pointer; }
 .help code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
 
-#detail-dialog { width: min(1000px, calc(100vw - 32px)); position: relative; }
+#detail-dialog { width: min(1000px, calc(100vw - 32px)); } /* keep the default position: fixed, or opening it scrolls the page to the top */
 #detail-dialog .close { position: absolute; top: 10px; right: 10px; }
 .detail { display: grid; grid-template-columns: minmax(240px, 400px) 1fr; gap: 24px; }
 .detail-art { position: relative; }
@@ -273,3 +273,52 @@ dialog.drop-target { outline: 3px dashed var(--accent); outline-offset: 4px; }
   .detail-info { padding-right: 0; }
   .list.layout-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }
+
+/* ---------- Price age, history, sync, more filters, card editing ---------- */
+.prices-age { color: var(--muted); font-size: 13px; }
+.prices-age.warn, .status.warn { color: var(--danger); }
+.stat-link { background: none; border: 0; padding: 0; color: var(--muted); font: inherit; cursor: pointer; }
+.stat-link b { color: var(--text); }
+.stat-link:hover:not(:disabled) b { color: var(--accent-2); text-decoration: underline; }
+
+.more-filters { padding-top: 4px; }
+.more-filters[hidden] { display: none; }
+.range { display: flex; align-items: center; gap: 6px; border: 0; margin: 0; padding: 0; color: var(--muted); font-size: 14px; }
+.range legend { float: left; margin-right: 6px; padding: 0; }
+.range input { width: 82px; }
+
+.edit-fields { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 8px; }
+.edit-fields label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 13px; }
+
+#history-dialog { width: min(760px, calc(100vw - 32px)); }
+.hist-summary { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; }
+.hist-now { font-size: 28px; font-weight: 700; }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .grid { stroke: var(--border); stroke-width: 1; }
+.chart .axis { fill: var(--muted); font-size: 12px; }
+.chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot, .chart .hover-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+.chart .cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .hit { fill: transparent; cursor: crosshair; }
+.chart-tip {
+  position: absolute; transform: translate(-50%, calc(-100% - 12px)); pointer-events: none;
+  display: flex; flex-direction: column; gap: 2px; white-space: nowrap;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+}
+.chart-tip span { color: var(--muted); }
+.hist-table { margin-top: 12px; color: var(--muted); }
+.hist-table summary { cursor: pointer; }
+.hist-table table { border-collapse: collapse; margin-top: 8px; font-size: 14px; color: var(--text); }
+.hist-table th, .hist-table td { text-align: left; padding: 3px 18px 3px 0; }
+.hist-table th { color: var(--muted); font-weight: 500; }
+
+#sync-dialog .dlg-foot { flex-wrap: wrap; margin: 12px 0; }
+#sync-token { flex: 1 1 260px; }
+.steps { padding-left: 20px; }
+.steps li { margin: 4px 0; }
+.small { font-size: 13px; }
+.chart svg [hidden] { display: none; } /* the hidden attribute doesn't apply to SVG elements on its own */
+#detail-dialog .detail-info { padding-right: 40px; } /* room for the close button */
+.chart-tip[hidden] { display: none; }

@@ -1,19 +1,32 @@
-# Publishes the static site in public/ to GitHub Pages on every push to main.
-name: Deploy to GitHub Pages
+# Runs the tests, then publishes the static site in public/ to GitHub Pages on every push to main.
+# Pull requests and other branches only run the tests.
+name: Test and deploy
 on:
   push:
-    branches: [main]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
 concurrency:
-  group: pages
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm test
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-26.04
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

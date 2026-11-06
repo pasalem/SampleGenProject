@@ -110,20 +110,28 @@ async function runPass(entries, level, onProgress, label) {
 export async function resolveEntries(entries, onProgress) {
   const labels = ['Looking up cards', 'Retrying by name + set', 'Retrying by name'];
   const resolved = [];
+  const tried = new Map(entries.map((e) => [e, new Set()])); // identifiers already looked up per entry
   let pending = entries;
-  const failed = [];
   for (let level = 0; level < 3 && pending.length; level++) {
-    const pass = await runPass(pending, level, onProgress, labels[level]);
-    resolved.push(...pass.resolved);
-    // Only retry entries whose identifier would actually change at the next level.
-    pending = [];
-    for (const e of pass.failed) {
-      const next = level < 2 && identify(e, level + 1);
-      if (next && next.key !== identify(e, level)?.key) pending.push(e);
-      else failed.push(e);
+    // Skip entries whose identifier at this level is one we've already tried
+    // (e.g. a line with a set code but no collector number is the same at levels 0 and 1).
+    const run = [], skip = [];
+    for (const e of pending) {
+      const key = identify(e, level)?.key;
+      if (key && !tried.get(e).has(key)) { tried.get(e).add(key); run.push(e); } else skip.push(e);
     }
+    if (!run.length) continue;
+    const pass = await runPass(run, level, onProgress, labels[level]);
+    resolved.push(...pass.resolved);
+    pending = [...skip, ...pass.failed];
   }
-  return { resolved, failed: [...failed, ...pending] };
+  return { resolved, failed: pending };
+}
+
+// When Scryfall last published its daily card data (including prices), as a timestamp.
+export async function pricesPublishedAt() {
+  const bulk = await request(`${API}/bulk-data/default-cards`, { headers: { Accept: 'application/json' } });
+  return Date.parse(bulk.updated_at) || 0;
 }
 
 // Re-fetch cards by Scryfall id (used to refresh prices).

@@ -36,4 +36,8 @@ function run(mode, fn) {
 export const getAll = () => run('readonly', (s) => s.getAll());
 export const putMany = (items) => run('readwrite', (s) => { items.forEach((i) => s.put(i)); });
 export const remove = (key) => run('readwrite', (s) => { s.delete(key); });
-export const clear = () => run('readwrite', (s) => { s.clear(); });
+// Several puts and deletes as one atomic change (e.g. changing a card's finish changes its key).
+export const write = (puts = [], deletes = []) => run('readwrite', (s) => { deletes.forEach((k) => s.delete(k)); puts.forEach((i) => s.put(i)); });
+// Clear and write in a single transaction, so a failed write never leaves the collection empty.
+export const replaceAll = (items) => run('readwrite', (s) => { s.clear(); items.forEach((i) => s.put(i)); });
+export const clear =() => run('readwrite', (s) => { s.clear(); });

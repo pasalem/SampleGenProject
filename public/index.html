@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MTG Collection</title>
+  <meta name="theme-color" content="#121216">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
 </head>
@@ -11,8 +14,10 @@
   <header class="topbar">
     <h1>🃏 MTG Collection</h1>
     <div id="stats" class="stats"></div>
+    <span id="prices-age" class="prices-age" aria-live="polite"></span>
     <div class="actions">
       <button id="btn-import" class="primary">Import</button>
+      <button id="btn-sync" title="Sync your collection between devices">Sync</button>
       <button id="btn-refresh">Refresh prices</button>
       <button id="btn-export-csv">Export CSV</button>
       <button id="btn-export-json" title="Full backup you can re-import later">Backup</button>
@@ -23,12 +28,12 @@
   <section class="toolbar">
     <input id="f-search" type="search" placeholder="Search name, type, rules text, artist…  ( / )" autocomplete="off">
     <div id="f-colors" class="colors" title="Card must include every selected color">
-      <button data-color="W" aria-label="White"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt=""></button>
-      <button data-color="U" aria-label="Blue"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt=""></button>
-      <button data-color="B" aria-label="Black"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt=""></button>
-      <button data-color="R" aria-label="Red"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt=""></button>
-      <button data-color="G" aria-label="Green"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt=""></button>
-      <button data-color="C" aria-label="Colorless"><img src="https://svgs.scryfall.io/card-symbols/C.svg" alt=""></button>
+      <button data-color="W" aria-label="White"><img crossorigin="anonymous" src="https://svgs.scryfall.io/card-symbols/W.svg" alt=""></button>
+      <button data-color="U" aria-label="Blue"><img crossorigin="anonymous" src="https://svgs.scryfall.io/card-symbols/U.svg" alt=""></button>
+      <button data-color="B" aria-label="Black"><img crossorigin="anonymous" src="https://svgs.scryfall.io/card-symbols/B.svg" alt=""></button>
+      <button data-color="R" aria-label="Red"><img crossorigin="anonymous" src="https://svgs.scryfall.io/card-symbols/R.svg" alt=""></button>
+      <button data-color="G" aria-label="Green"><img crossorigin="anonymous" src="https://svgs.scryfall.io/card-symbols/G.svg" alt=""></button>
+      <button data-color="C" aria-label="Colorless"><img crossorigin="anonymous" src="https://svgs.scryfall.io/card-symbols/C.svg" alt=""></button>
       <button data-color="M" aria-label="Multicolor" class="multi">M</button>
     </div>
     <select id="f-type" aria-label="Type">
@@ -62,6 +67,7 @@
       <option value="qty">Sort: Quantity</option>
       <option value="added">Sort: Recently added</option>
     </select>
+    <button id="f-more" aria-expanded="false" aria-controls="more-filters">More filters</button>
     <button id="f-reset" class="ghost">Reset</button>
     <label class="zoom" title="Card size: make it smaller to fit more text (Ctrl + mouse wheel over the cards also works)">
       <span aria-hidden="true">🔍</span>
@@ -72,6 +78,21 @@
       <button data-layout="list">List</button>
       <button data-layout="grid">Grid</button>
     </div>
+  </section>
+  <section id="more-filters" class="toolbar more-filters" hidden>
+    <select id="f-format" aria-label="Format legality"><option value="">Any format</option></select>
+    <fieldset class="range">
+      <legend>Mana value</legend>
+      <input id="f-mv-min" type="number" min="0" step="1" inputmode="numeric" placeholder="min" aria-label="Minimum mana value">
+      <span aria-hidden="true">–</span>
+      <input id="f-mv-max" type="number" min="0" step="1" inputmode="numeric" placeholder="max" aria-label="Maximum mana value">
+    </fieldset>
+    <fieldset class="range">
+      <legend>Price each ($)</legend>
+      <input id="f-price-min" type="number" min="0" step="0.01" inputmode="decimal" placeholder="min" aria-label="Minimum price">
+      <span aria-hidden="true">–</span>
+      <input id="f-price-max" type="number" min="0" step="0.01" inputmode="decimal" placeholder="max" aria-label="Maximum price">
+    </fieldset>
   </section>
   <div id="showing" class="showing"></div>
 
@@ -124,10 +145,45 @@
     <div id="detail-body"></div>
   </dialog>
 
+  <dialog id="history-dialog">
+    <div class="dlg-head">
+      <h2>Collection value</h2>
+      <button id="history-close" class="ghost" aria-label="Close">✕</button>
+    </div>
+    <div id="history-body"></div>
+  </dialog>
+
+  <dialog id="sync-dialog">
+    <div class="dlg-head">
+      <h2>Sync between devices</h2>
+      <button id="sync-close" class="ghost" aria-label="Close">✕</button>
+    </div>
+    <div id="sync-off">
+      <p>Keep your collection the same on every computer and phone you use. It's saved in a private (secret) GitHub Gist in your own GitHub account.</p>
+      <ol class="steps">
+        <li>Create a token at <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=MTG%20Collection%20sync" target="_blank" rel="noopener">github.com/settings/tokens</a> with only the <b>gist</b> scope.</li>
+        <li>Paste it below and click Connect. Do the same on each device, using the same GitHub account.</li>
+      </ol>
+      <div class="dlg-foot">
+        <input id="sync-token" type="password" placeholder="GitHub token (ghp_… or github_pat_…)" autocomplete="off" spellcheck="false">
+        <button id="sync-connect" class="primary">Connect</button>
+      </div>
+      <p class="muted small">The token is stored only in this browser. Anyone who can run code on this website's address could read it, so give it the gist scope and nothing else, and revoke it on GitHub if you stop using sync.</p>
+    </div>
+    <div id="sync-on" hidden>
+      <p>Connected as <b id="sync-account"></b>. Changes sync automatically a few seconds after you make them, and when you return to this tab. <a id="sync-gist" href="#" target="_blank" rel="noopener">View the gist ↗</a></p>
+      <div class="dlg-foot">
+        <button id="sync-now" class="primary">Sync now</button>
+        <button id="sync-disconnect" class="danger">Disconnect this device</button>
+      </div>
+    </div>
+    <p id="sync-status" class="status" aria-live="polite"></p>
+  </dialog>
+
   <div id="drop-overlay" class="drop-overlay" hidden><div>Drop your file to import it</div></div>
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <footer class="foot">Card data &amp; images © Wizards of the Coast, provided by <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>. Your collection is stored only in this browser.</footer>
+  <footer class="foot">Card data &amp; images © Wizards of the Coast, provided by <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>. Your collection is stored in this browser (and in your own GitHub Gist if you turn on Sync).</footer>
 
   <script type="module" src="js/app.js"></script>
 </body>

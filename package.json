@@ -4,6 +4,12 @@
   "private": true,
   "description": "Locally hosted Magic: The Gathering collection viewer powered by Scryfall",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/*.test.mjs",
+    "test:e2e": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 test/e2e/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
