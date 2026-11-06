@@ -1,0 +1,9 @@
+{
+  "name": "mtg-collection",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Locally hosted Magic: The Gathering collection viewer powered by Scryfall",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
