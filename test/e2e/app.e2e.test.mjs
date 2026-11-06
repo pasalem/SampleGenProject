@@ -336,7 +336,15 @@ describe('MTG Collection in a browser', { skip, timeout: 300000 }, () => {
     test('phone-sized screens have no sideways scrolling', async () => {
       await b.setViewport(390, 844, true);
       await sleep(200);
-      assert.ok(await b.eval(`return document.documentElement.scrollWidth <= 390`), 'page fits the screen width');
+      for (const width of [390, 360, 320]) {
+        await b.setViewport(width, 844, true);
+        await sleep(150);
+        const overflow = await b.eval(`return [...document.querySelectorAll('body *')]
+          .filter(el => el.getClientRects().length && el.getBoundingClientRect().right > ${width} + 0.5)
+          .map(el => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).join('.') : '') + ' right=' + Math.round(el.getBoundingClientRect().right))`);
+        assert.deepEqual(overflow, [], `elements wider than a ${width}px screen`);
+        assert.ok(await b.eval(`return document.documentElement.scrollWidth <= ${width}`), `page fits a ${width}px screen`);
+      }
       await b.setViewport(1280, 900);
     });
   });

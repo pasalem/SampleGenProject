@@ -322,3 +322,4 @@ dialog.drop-target { outline: 3px dashed var(--accent); outline-offset: 4px; }
 .chart svg [hidden] { display: none; } /* the hidden attribute doesn't apply to SVG elements on its own */
 #detail-dialog .detail-info { padding-right: 40px; } /* room for the close button */
 .chart-tip[hidden] { display: none; }
+.toolbar select, .toolbar input { max-width: 100%; } /* long set names must not push the page wider than a phone */
